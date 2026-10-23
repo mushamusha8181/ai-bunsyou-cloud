@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>記事ラボ</title>
+<style>
+:root{--bg:#f7f6f2;--fg:#1d1d1b;--mu:#76756f;--ac:#1f7a5a;--bd:#d9d7cf}
+@media(prefers-color-scheme:dark){:root{--bg:#1a1b1a;--fg:#ececea;--mu:#97968f;--ac:#4cc49a;--bd:#3d3f3c}}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.55 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+nav{display:flex;position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--bd);z-index:2}
+nav button{flex:1;border:0;background:none;padding:9px 2px;font-size:13px;color:var(--mu)}
+nav button.on{color:var(--ac);box-shadow:inset 0 -2px var(--ac)}
+main{padding:10px 12px 40px}
+section{display:none}section.on{display:block}
+label{display:block;margin:10px 0 3px;font-size:12px;color:var(--mu)}
+input,textarea,select{width:100%;padding:7px;border:1px solid var(--bd);border-radius:6px;background:none;color:inherit;font:inherit}
+textarea{min-height:90px}
+.b{padding:5px 10px;font-size:12px;border:1px solid var(--ac);background:none;color:var(--ac);border-radius:6px;margin:6px 6px 0 0}
+.p{background:var(--ac);color:var(--bg)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.c{border:1px solid var(--bd);border-radius:8px;padding:8px;margin:8px 0}
+#pv{border:1px solid var(--bd);border-radius:6px;padding:8px;min-height:140px;display:none}
+#pv img,.c img{max-width:100%;border-radius:6px}
+#st{position:fixed;left:0;right:0;bottom:0;padding:6px 12px;background:var(--bg);border-top:1px solid var(--bd);font-size:12px;color:var(--mu);min-height:30px}
+</style></head><body>
+<nav id="nv"></nav>
+<main>
+<section id="s-set">
+<label>DeepSeek APIキー</label><input id="dk" type="password" autocomplete="off">
+<label>DeepSeek モデル名</label><input id="dm">
+<label>Gemini APIキー</label><input id="gk" type="password" autocomplete="off">
+<label>Gemini 画像モデル名(標準・安いほう)</label><input id="gm" list="gml">
+<label>Gemini 画像モデル名(高品質・高いほう)</label><input id="gm2" list="gml" placeholder="空欄なら標準だけ使う">
+<datalist id="gml"><option value="gemini-3.1-flash-lite-image"><option value="gemini-3.1-flash-image"><option value="gemini-3-pro-image"></datalist>
+<label>WordPress URL</label><input id="wu" placeholder="https://example.com">
+<label>WordPress ユーザー名(投稿専用)</label><input id="wn">
+<label>アプリケーションパスワード</label><input id="wp" type="password" autocomplete="off">
+<button class="b p" onclick="saveCfg()">保存</button>
+<p style="color:var(--mu);font-size:12px">キーはこの端末のブラウザ内だけに保存し、各社へ直接送ります。</p>
+<hr style="border:0;border-top:1px solid var(--bd,#ccc);margin:14px 0">
+<b>バックアップ</b>
+<label style="display:block;margin-top:6px"><input type="checkbox" id="bkey"> APIキー・WordPressパスワードも含める(ファイルの扱いに注意)</label>
+<button class="b" onclick="bkOut()">書き出す(ドライブなどへ保存)</button>
+<button class="b" onclick="$('bkf').click()">読み込む</button>
+<input id="bkf" type="file" accept=".json,application/json" style="display:none" onchange="bkIn(this)">
+<p style="color:var(--mu);font-size:12px">履歴・画像・文体・広告・料金の記録・設定を1つのファイルにします。読み込むと、いまの内容は置き換わります。</p>
+</section>
+
+<section id="s-mk">
+<label>テーマ</label><input id="th">
+<label>ソース(URLだけ入れると本文を自動取得。貼り付けでもOK)</label>
+<input id="sn" placeholder="名前またはURL">
+<textarea id="sx" placeholder="記事の本文を貼り付け" style="margin-top:6px"></textarea>
+<button class="b" onclick="addSrc()">ソースを追加</button>
+<div id="sl"></div>
+<label>文体</label><select id="ss" onchange="loadStyle()"></select>
+<textarea id="sp" placeholder="文体プロファイル(自動作成後も編集できます)" style="margin-top:6px"></textarea>
+<textarea id="sm" placeholder="手本にしたい文章を貼ると分析します" style="min-height:60px;margin-top:6px"></textarea>
+<input id="sname" placeholder="プロファイル名" style="margin-top:6px">
+<button class="b" onclick="learn()">この文体にする</button><button class="b" onclick="saveStyle()">文体を保存</button>
+<div class="row"><div><label>文字数(以上)</label><input id="mn" type="number" value="3000"></div>
+<div><label>記事内の画像枚数</label><input id="nm" type="number" value="3"></div>
+<div><label>サムネイル枚数</label><input id="tn" type="number" value="2"></div></div>
+<div class="row"><div><label>画像の位置</label><select id="ip"><option value="ai">AIに任せる</option><option value="me">自分で決める</option></select></div>
+<div><label>広告の位置</label><select id="dp"><option value="me">自分で決める</option><option value="ai">AIに任せる</option></select></div></div>
+<label>キーワード(カンマ区切り)</label><input id="kw">
+<label>キーワード出現率の目安(%)</label><input id="kr" value="1.5">
+<label>追加指示</label><textarea id="ex" style="min-height:50px"></textarea>
+<button class="b p" onclick="gen()">記事を作る</button>
+</section>
+
+<section id="s-ed">
+<input id="ti" placeholder="タイトル">
+<button class="b" onclick="tg(0)">HTML</button><button class="b" onclick="tg(1)">表示</button>
+<textarea id="ed" style="min-height:280px;font:12px/1.5 monospace;margin-top:6px"></textarea>
+<div id="pv"></div>
+<div class="row" style="margin-top:8px"><input id="fi" placeholder="検索"><input id="ri" placeholder="置換"></div>
+<button class="b" onclick="rep(0)">1件置換</button><button class="b" onclick="rep(1)">一括置換</button>
+<div><button class="b" onclick="adOpen()">広告を挿入</button><button class="b" onclick="adAuto()">AIで広告位置を決める</button><button class="b" onclick="add(1000)">+1000字</button><button class="b" onclick="add(2000)">+2000字</button></div>
+<input id="ri2" placeholder="リライトの一言指示(例: もっとやわらかく)" style="margin-top:8px">
+<button class="b" onclick="rw(0)">全文リライト</button><button class="b" onclick="rw(1)">選択範囲をリライト</button>
+<div><button class="b" onclick="sv('手動保存')">版を保存</button><button class="b p" onclick="send()">WordPressに下書き送信</button></div>
+</section>
+
+<section id="s-im">
+<button class="b" onclick="imgList()">記事の画像位置を読み込む</button>
+<button class="b" onclick="imgIns()">カーソル位置に画像を追加</button>
+<button class="b" onclick="imgAuto()">AIに位置を決めてもらう</button>
+<div id="il"></div>
+</section>
+
+<section id="s-th">
+<b>サムネイル(アイキャッチ)</b><br>
+<button class="b" onclick="thMake()">サムネイル案を作る</button>
+<div id="tl"></div>
+</section>
+
+<section id="s-ad">
+<input id="aq" placeholder="検索(名前・タグ・分類)" oninput="adl()">
+<select id="af" onchange="adl()" style="margin-top:6px"></select>
+<label>名前</label><input id="an">
+<div class="row"><div><label>親分類</label><input id="ap" list="apl" placeholder="空欄=未分類"></div>
+<div><label>子分類</label><input id="ac" list="acl"></div></div>
+<datalist id="apl"></datalist><datalist id="acl"></datalist>
+<label>タグ(カンマ区切り)</label><input id="at">
+<label>コード(URL・HTML・スクリプトをそのまま貼れます)</label>
+<textarea id="ax" style="font:12px/1.5 monospace"></textarea>
+<button class="b p" onclick="adSave()">登録</button><button class="b" onclick="adClr()">入力を空にする</button>
+<div id="al"></div>
+</section>
+
+<section id="s-co">
+<b>単価(公式の料金ページで確認して入力)</b>
+<div class="row"><div><label>DeepSeek 入力 $/100万トークン</label><input id="pi" type="number" step="any"></div>
+<div><label>DeepSeek 出力 $/100万トークン</label><input id="po" type="number" step="any"></div></div>
+<label>画像の単価 $/枚(モデルごと。1920×1080くらいまでの単価を入れる)</label>
+<div class="row"><div><label>gemini-3.1-flash-lite-image</label><input id="pm1" type="number" step="any"></div></div>
+<div class="row"><div><label>gemini-3.1-flash-image</label><input id="pm2" type="number" step="any"></div></div>
+<div class="row"><div><label>gemini-3-pro-image</label><input id="pm3" type="number" step="any"></div></div>
+<label>上記以外のモデルの単価 $/枚</label><input id="pm0" type="number" step="any">
+<label>URL取得(Fetch) $/1回</label><input id="pf" type="number" step="any">
+<label>円換算レート(1ドル=円)</label><input id="px" type="number" step="any">
+<button class="b p" onclick="priceSave()">単価を保存</button>
+<p style="color:var(--mu);font-size:12px">金額は円で表示します(1ドル=160円が初期値)。DeepSeekは時間帯でピークの単価が2倍になるので、ピークによく使うなら単価を2倍で入れてください。表示は目安で、実際の請求は各社の管理画面が正です。</p>
+<div id="cl"></div>
+<button class="b" onclick="costReset('month')">今月分をリセット</button><button class="b" onclick="costReset('all')">全てリセット</button>
+</section>
+
+<section id="s-hs"><div id="hl"></div></section>
+</main>
+<div id="pop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5" onclick="if(event.target==this)this.style.display='none'">
+<div style="position:absolute;left:8px;right:8px;top:8%;max-height:80%;overflow:auto;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px">
+<input id="pq" placeholder="検索" oninput="popl()"><div id="pl"></div>
+<button class="b" onclick="$('pop').style.display='none'">閉じる</button></div></div>
+<div id="st"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const S=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+const W=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){st('保存できませんでした')}};
+const st=m=>$('st').textContent=m;
+let cfg=Object.assign({dm:'deepseek-flash',gm:'gemini-3.1-flash-image',gm2:'gemini-3-pro-image'},S('cfg')||{});
+if(cfg.gm=='gemini-2.5-flash-image'){cfg.gm='gemini-3.1-flash-image';W('cfg',cfg)}
+let srcs=S('srcs')||[],styles=S('styles')||{},arts=S('arts')||[],cur=null,imgs={};
+const ids=['dk','dm','gk','gm','gm2','wu','wn','wp'];
+ids.forEach(i=>$(i).value=cfg[i]||'');
+function saveCfg(){ids.forEach(i=>cfg[i]=$(i).value.trim());W('cfg',cfg);st('保存しました')}
+
+const T=[['set','設定'],['mk','作成'],['ed','編集'],['im','写真'],['th','サムネ'],['ad','広告'],['hs','履歴'],['co','料金']];
+function show(k){if(k=='co')costShow();T.forEach(([a])=>{$('s-'+a).classList.toggle('on',a==k);$('t-'+a).classList.toggle('on',a==k)})}
+T.forEach(([a,b])=>{const e=document.createElement('button');e.id='t-'+a;e.textContent=b;e.onclick=()=>show(a);$('nv').appendChild(e)});
+
+async function run(f,m){st(m||'処理中…');try{await f();st('完了')}catch(e){st('エラー: '+e.message)}}
+/* APK化(Capacitor)したときは、ブラウザの制限を通らないネイティブ通信を使う */
+async function nativeFetch(u,o){
+  const H=window.Capacitor.Plugins.CapacitorHttp;
+  const hd=Object.assign({},o.headers||{});let data=o.body;
+  const bin=data instanceof Uint8Array;
+  if(bin){let t='';for(let i=0;i<data.length;i+=8192)t+=String.fromCharCode.apply(null,data.subarray(i,i+8192));data=btoa(t)}
+  const r=await H.request({url:u,method:o.method||'GET',headers:hd,data,dataType:bin?'file':undefined,responseType:'json'});
+  return {ok:r.status>=200&&r.status<300,status:r.status,json:async()=>typeof r.data=='string'?JSON.parse(r.data):r.data};
+}
+const cfgHost=()=>{try{return new URL(cfg.wu).hostname}catch(e){return ''}};
+async function jf(u,o){
+  let r;try{r=await (window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.CapacitorHttp?nativeFetch(u,o):fetch(u,o))}catch(e){
+    const h=new URL(u).hostname;
+    if(navigator.onLine===false)throw new Error('オフラインです。接続を確認してください');
+    if(h==cfgHost())throw new Error('WordPressに接続できません。URLの綴り・https・REST APIの有効化を確認してください。ブラウザの制限(CORS)で弾かれている場合は、プラグインでこのアプリの接続元を許可するか、アプリ(APK)化してください');
+    throw new Error(h+' に接続できません。接続を確認してください。ブラウザの制限で弾かれている場合はアプリ(APK)化で解決します');
+  }
+  let j={};try{j=await r.json()}catch(e){}
+  if(!r.ok)throw new Error(j.error?.message||j.message||r.status);
+  return j;
+}
+async function ds(sys,user){
+  if(!cfg.dk)throw new Error('DeepSeekのキーを設定してください');
+  const j=await jf('https://api.deepseek.com/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+cfg.dk},body:JSON.stringify({model:cfg.dm,max_tokens:8192,messages:[{role:'system',content:sys},{role:'user',content:user}]})});
+  const us=j.usage||{};logUse({k:'ds',i:us.prompt_tokens||0,o:us.completion_tokens||0});
+  return j.choices[0].message.content;
+}
+async function fetchUrl(u){
+  if(!cfg.dk)throw new Error('DeepSeekのキーを設定してください');
+  if(!/^https?:\/\/[^\s]+$/i.test(u))throw new Error('URLの形が正しくありません');
+  let j;
+  try{j=await jf('https://api.deepseek.com/v1/tools/fetch',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+cfg.dk},body:JSON.stringify({url:u})})}
+  catch(e){throw new Error('URLの取得に失敗しました('+e.message+')。このサイトは取得できないか、ブラウザの制限の可能性があります。本文を貼り付けて使ってください')}
+  const c=(j.content||'').trim();
+  if(!c)throw new Error('本文が取れませんでした(取得を許可していないサイトかもしれません)。本文を貼り付けてください');
+  logUse({k:'fe'});
+  return {title:(j.title||'').trim(),content:c};
+}
+async function gem(p,model){
+  if(!cfg.gk)throw new Error('Geminiのキーを設定してください');
+  const j=await jf(`https://generativelanguage.googleapis.com/v1beta/models/${model||cfg.gm}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':cfg.gk},body:JSON.stringify({contents:[{parts:[{text:p}]}],generationConfig:{responseModalities:['TEXT','IMAGE']}})});
+  const pt=(j.candidates?.[0]?.content?.parts||[]).find(x=>x.inlineData);
+  if(!pt)throw new Error('画像が返りませんでした');
+  logUse({k:'g',m:model||cfg.gm});
+  return pt.inlineData;
+}
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const setEd=v=>{$('ed').value=v;if($('pv').style.display=='block')pvu()};
+const unfence=s=>s.replace(/```(html)?/g,'').trim();
+function clean(h){const d=new DOMParser().parseFromString(h,'text/html');d.querySelectorAll('script,iframe,object').forEach(e=>e.remove());d.body.querySelectorAll('*').forEach(e=>[...e.attributes].forEach(a=>{if(/^on/i.test(a.name))e.removeAttribute(a.name)}));return d.body.innerHTML}
+
+/* ソース */
+function addSrc(){run(async()=>{
+  let n=$('sn').value.trim(),t=$('sx').value.trim();
+  if(!t){
+    if(!isUrl(n))return;
+    const f=await fetchUrl(n);t=f.content;n=(f.title||n).slice(0,60);
+  }
+  srcs.push({n:n||'ソース'+(srcs.length+1),t,on:true});$('sn').value=$('sx').value='';W('srcs',srcs);rs();st('追加しました('+t.length.toLocaleString('ja-JP')+'文字)');
+},'URLから本文を取得中…')}
+function rs(){const l=$('sl');l.innerHTML='';srcs.forEach((s,i)=>{const d=document.createElement('div');d.className='c';const c=document.createElement('input');c.type='checkbox';c.style.width='auto';c.checked=s.on;c.onchange=()=>{s.on=c.checked;W('srcs',srcs)};const sp=document.createElement('span');sp.textContent=' '+s.n+'('+s.t.length+'字) ';const x=document.createElement('button');x.className='b';x.textContent='削除';x.onclick=()=>{srcs.splice(i,1);W('srcs',srcs);rs()};d.append(c,sp,x);l.appendChild(d)})}
+
+/* 文体 */
+function rst(){const s=$('ss');s.innerHTML='<option value="">(保存した文体を選ぶ)</option>';Object.keys(styles).forEach(k=>{const o=document.createElement('option');o.value=o.textContent=k;s.appendChild(o)})}
+function loadStyle(){const k=$('ss').value;if(k){$('sp').value=styles[k];$('sname').value=k}}
+function saveStyle(){const k=$('sname').value.trim();if(!k)return;styles[k]=$('sp').value;W('styles',styles);rst();$('ss').value=k}
+function learn(){run(async()=>{let t=$('sm').value.trim();if(!t)throw new Error('手本の文章かURLを貼ってください');if(isUrl(t)){t=(await fetchUrl(t)).content}$('sp').value=await ds('あなたは文体分析の専門家です。','次の文章の文体の特徴(文末表現、一文の長さ、口調、よく使う言い回し、段落の区切り方、一人称)を、別の記事を同じ文体で書けるよう箇条書きで具体的にまとめてください。内容そのものは書かないでください。\n\n'+t)},'文体を分析中…')}
+
+/* 生成 */
+const cond=()=>({th:$('th').value,mn:$('mn').value,kw:$('kw').value,kr:$('kr').value,nm:$('nm').value,tn:$('tn').value,ip:$('ip').value,dp:$('dp').value,ex:$('ex').value,src:srcs.filter(s=>s.on).map(s=>s.n)});
+function gen(){run(async()=>{
+  const sel=srcs.filter(s=>s.on);if(!sel.length)throw new Error('ソースを選んでください');
+  const u=`テーマ:${$('th').value}
+文体プロファイル:${$('sp').value||'指定なし'}
+文字数:${$('mn').value}文字以上
+キーワード:${$('kw').value}(出現率の目安${$('kr').value}%。不自然な詰め込みは禁止)
+画像:${$('ip').value=='ai'&&(+$('nm').value>0)?'必要な位置に [画像: 何を写した画像か1文] をちょうど'+(+$('nm').value)+'個入れる':'本文に画像の目印は入れない'}
+広告:${$('dp').value=='ai'&&ads.length?'広告を入れるのに自然な切れ目(見出しの前後など)に [広告] という目印を、長さに応じて2〜4個だけ入れる':'本文に広告の目印は入れない'}
+追加指示:${$('ex').value||'なし'}
+ルール:冒頭で結論、H2/H3で階層化、価格や発売日など変わりやすい情報には確認日を添える、最後にまとめ。
+出力:1行目は「TITLE: タイトル」。2行目以降はHTML本文(h2,h3,p,ul,tableのみ。htmlやbodyタグは不要)。
+ソース:
+${sel.map((s,i)=>`--- ソース${i+1}(${s.n})\n${s.t}`).join('\n')}`;
+  const o=await ds('あなたはSEOに強いプロの編集者兼ライターです。ソースの文章・言い回し・構成の順番は使わず、事実と数値だけを使って、ゼロから新しく書き起こします。',u);
+  const m=o.match(/^\s*TITLE[:：]\s*(.+)\n([\s\S]*)$/);
+  cur={id:Date.now()};imgs={};thumbs=[];thumbSel=-1;
+  $('ti').value=m?m[1].trim():$('th').value;
+  setEd(unfence(m?m[2]:o));
+  await sv('生成');imgList();thList();show('ed');
+},'記事を生成中…')}
+
+/* 編集 */
+function tg(v){$('ed').style.display=v?'none':'block';$('pv').style.display=v?'block':'none';if(v)pvu()}
+function pvu(){$('pv').innerHTML=clean($('ed').value)}
+function rep(all){const f=$('fi').value,r=$('ri').value;if(!f)return;const e=$('ed'),n=e.value.split(f).length-1;
+  setEd(all?e.value.split(f).join(r):e.value.replace(f,()=>r));st(n+'件見つかりました')}
+function add(n){run(async()=>{
+  const e=$('ed').value,i=e.lastIndexOf('<h2');
+  const o=await ds('あなたはプロのライターです。','次の記事に追加する本文だけをHTML(h2,h3,pのみ)で返してください。約'+n+'字。既存の内容と重複せず、文体とキーワード比率を保ち、[画像: ...]は入れないでください。\n文体:'+($('sp').value||'そのまま')+'\nキーワード:'+$('kw').value+'\n記事:\n'+e);
+  const a=unfence(o);
+  setEd(i>0?e.slice(0,i)+a+'\n'+e.slice(i):e+'\n'+a);sv('+'+n+'字');
+},'追加中…')}
+function rw(sel){run(async()=>{
+  const e=$('ed');let a=0,b=e.value.length;
+  if(sel){if(e.style.display=='none')throw new Error('HTML表示に切り替えて範囲を選択してください');a=e.selectionStart;b=e.selectionEnd;if(a===b)throw new Error('範囲を選択してください')}
+  const o=await ds('あなたはプロのライターです。指示に従い、HTML構造を保ってリライトし、結果だけを返します。','指示:'+($('ri2').value||'読みやすく自然に')+'\n文体:'+($('sp').value||'そのまま')+'\n[画像: ...]の記述はそのまま残す\n対象:\n'+e.value.slice(a,b));
+  setEd(e.value.slice(0,a)+unfence(o)+e.value.slice(b));sv(sel?'範囲リライト':'全文リライト');imgList();
+},'リライト中…')}
+
+/* 画像(記事内の説明文をキーに保持) */
+const MK=/\[画像:\s*([^\]]+)\]/g;
+const marks=()=>[...$('ed').value.matchAll(MK)].map(x=>x[1]);
+function imgList(){
+  const m=marks(),box=$('il');box.innerHTML='';
+  if(!m.length){box.textContent='画像の位置がありません';return}
+  m.forEach(p=>{
+    const d=document.createElement('div');d.className='c';
+    const ta=document.createElement('textarea');ta.style.minHeight='56px';ta.value=p;
+    const sl=document.createElement('select');sl.style.width='auto';sl.style.marginRight='6px';
+    [['標準',cfg.gm],['高品質',cfg.gm2]].forEach(([n,v])=>{if(v){const o=document.createElement('option');o.value=v;o.textContent=n;sl.appendChild(o)}});
+    const bt=document.createElement('button');bt.className='b';
+    const dv=document.createElement('div');
+    const draw=()=>{dv.textContent='';bt.textContent=imgs[p]?'作り直す':'生成';if(imgs[p]){const im=document.createElement('img');im.src=`data:${imgs[p].mimeType};base64,${imgs[p].data}`;dv.appendChild(im)}};
+    bt.onclick=()=>run(async()=>{imgs[p]=await gem(ta.value,sl.value);draw()},'画像を生成中…');
+    draw();d.append(ta,sl,bt,dv);box.appendChild(d);
+  });
+}
+
+/* WordPress */
+const b64=s=>btoa(String.fromCharCode(...new TextEncoder().encode(s)));
+const extOf=m=>{m=(m||'').toLowerCase();return m.includes('jpeg')||m.includes('jpg')?'jpg':m.includes('webp')?'webp':m.includes('gif')?'gif':'png'};
+function send(){
+  const alts=marks(),miss=alts.filter(a=>!imgs[a]).length;
+  if(miss&&!confirm('未生成の画像位置が'+miss+'か所あります。その位置は削除して送ります。よろしいですか?'))return;
+  run(async()=>{
+    if(!cfg.wu||!cfg.wn||!cfg.wp)throw new Error('WordPressの設定を入力してください');
+    const base=cfg.wu.replace(/\/$/,''),auth='Basic '+b64(cfg.wn+':'+cfg.wp);
+    const parts=fillAds($('ed').value).split(MK).filter((_,i)=>i%2==0);
+    let out=parts[0];
+    for(let i=0;i<alts.length;i++){
+      const im=imgs[alts[i]];let tag='';
+      if(im){
+        st(`画像をアップロード中 ${i+1}/${alts.length}`);
+        const bin=Uint8Array.from(atob(im.data),c=>c.charCodeAt(0)),ext=extOf(im.mimeType);
+        const j=await jf(base+'/wp-json/wp/v2/media',{method:'POST',headers:{Authorization:auth,'Content-Type':im.mimeType,'Content-Disposition':`attachment; filename="img${Date.now()}_${i}.${ext}"`},body:bin});
+        tag=`<img src="${j.source_url}" alt="${esc(alts[i])}">`;
+      }
+      out+=tag+(parts[i+1]||'');
+    }
+    let fid;const tt=thumbs[thumbSel];
+    if(tt&&tt.im){
+      st('サムネイルをアップロード中');
+      const bin=Uint8Array.from(atob(tt.im.data),c=>c.charCodeAt(0)),ext=extOf(tt.im.mimeType);
+      const j=await jf(base+'/wp-json/wp/v2/media',{method:'POST',headers:{Authorization:auth,'Content-Type':tt.im.mimeType,'Content-Disposition':`attachment; filename="thumb${Date.now()}.${ext}"`},body:bin});
+      fid=j.id;
+    }
+    const body={title:$('ti').value,content:out,status:'draft'};if(fid)body.featured_media=fid;
+    await jf(base+'/wp-json/wp/v2/posts',{method:'POST',headers:{Authorization:auth,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    sv('WP下書き送信');
+  },'WordPressへ送信中…');
+}
+
+/* バックアップ(書き出し/読み込み) */
+const BK_KEYS=['ads','arts','cfg','price','price_px_set','srcs','styles','use'];
+async function bkOut(){run(async()=>{
+  const data={};BK_KEYS.forEach(k=>{const v=S(k);if(v!==null)data[k]=v});
+  if(!$('bkey').checked&&data.cfg){data.cfg=Object.assign({},data.cfg,{dk:'',gk:'',wp:''})}
+  const imgsAll={};
+  for(const a of arts)for(const v of a.v){if(v.vid){try{const r=await dbGet(v.vid);if(r)imgsAll[v.vid]=r}catch(e){}}}
+  const obj={app:'kijilab',ver:1,at:new Date().toISOString(),keys:!!$('bkey').checked,data,imgs:imgsAll};
+  const txt=JSON.stringify(obj);
+  const d=new Date(),pad=n=>String(n).padStart(2,'0');
+  const name=`kijilab_backup_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+  const file=new File([txt],name,{type:'application/json'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:name});st('書き出しました');return}catch(e){if(e&&e.name=='AbortError'){st('キャンセルしました');return}}
+  }
+  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+  st('書き出しました('+(txt.length/1048576).toFixed(1)+'MB)');
+},'バックアップを作成中…')}
+function bkIn(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;run(async()=>{
+  let o;try{o=JSON.parse(await f.text())}catch(e){throw new Error('ファイルを読めません(バックアップのファイルではないようです)')}
+  if(!o||o.app!='kijilab'||!o.data)throw new Error('記事ラボのバックアップではありません');
+  const n=(o.data.arts||[]).length;
+  if(!confirm(`いまの内容を、このバックアップ(${o.at?o.at.slice(0,16).replace('T',' '):'日時不明'}・記事${n}件)で置き換えます。よろしいですか?`)){st('キャンセルしました');return}
+  const keepKeys=!o.keys;const oldCfg=cfg;
+  BK_KEYS.forEach(k=>{if(k in o.data)W(k,o.data[k])});
+  if(keepKeys){const c=Object.assign({},S('cfg')||{});['dk','gk','wp'].forEach(x=>{if(!c[x])c[x]=oldCfg[x]||''});W('cfg',c)}
+  for(const [vid,r] of Object.entries(o.imgs||{})){try{await dbPut(vid,r)}catch(e){throw new Error('画像の保存に失敗しました(空き容量を確認)')}}
+  st('読み込みました。画面を更新します…');setTimeout(()=>location.reload(),800);
+},'読み込み中…')}
+
+/* 履歴(記事は残し、更新履歴は30件まで) */
+async function sv(l){
+  if(!cur)cur={id:Date.now()};
+  let a=arts.find(x=>x.id==cur.id);
+  if(!a){a={id:cur.id,title:'',v:[]};arts.unshift(a)}
+  const vid=cur.id+'_'+Date.now();
+  const v={t:new Date().toLocaleString('ja-JP'),l,h:$('ed').value,c:cond(),vid,th:thumbs.map(x=>x.p),ts:thumbSel,ki:Object.keys(imgs)};
+  try{
+    await dbPut(vid,{imgs:Object.assign({},imgs),thumbs:thumbs.map(x=>x.im)});
+  }catch(e){st('画像を保存できませんでした(空き容量を確認)');v.vid=null}
+  a.title=$('ti').value;a.v.unshift(v);
+  const old=a.v.slice(30);a.v=a.v.slice(0,30);
+  for(const o of old){if(o.vid)try{await dbDel(o.vid)}catch(e){}}
+  W('arts',arts);hist();
+}
+function hist(){
+  const h=$('hl');h.innerHTML='';if(!arts.length){h.textContent='まだ記事がありません';return}
+  arts.forEach(a=>{
+    const d=document.createElement('div');d.className='c';
+    const t=document.createElement('b');t.textContent=a.title||'(無題)';d.appendChild(t);
+    const dx=document.createElement('button');dx.className='b';dx.textContent='この記事を削除';dx.style.float='right';
+    dx.onclick=async()=>{if(!confirm('この記事と全ての更新履歴・画像を削除します。よろしいですか?'))return;for(const o of a.v){if(o.vid)try{await dbDel(o.vid)}catch(e){}}arts=arts.filter(x=>x.id!=a.id);W('arts',arts);hist()};
+    d.appendChild(dx);d.appendChild(document.createElement('br'));
+    a.v.forEach(v=>{const b=document.createElement('button');b.className='b';b.textContent=v.t+' '+v.l;
+      b.onclick=async()=>{cur={id:a.id};imgs={};thumbs=[];thumbSel=-1;$('ti').value=a.title;setEd(v.h);
+        if(v.vid){try{const r=await dbGet(v.vid);if(r){imgs=r.imgs||{};thumbs=(v.th||[]).map((p,i)=>({p,im:(r.thumbs||[])[i]||null}));thumbSel=v.ts??-1}}catch(e){st('画像を読み込めませんでした')}}
+        thList();
+        const c=v.c||{};$('th').value=c.th||'';$('mn').value=c.mn||3000;$('kw').value=c.kw||'';$('kr').value=c.kr||'';$('nm').value=c.nm||3;$('tn').value=c.tn||2;$('ip').value=c.ip||'ai';$('dp').value=c.dp||'me';$('ex').value=c.ex||'';
+        imgList();show('ed')};d.appendChild(b)});
+    h.appendChild(d);
+  });
+}
+
+
+/* 画像の保存(IndexedDB): 履歴の版ごとに紐づけ、版が消えたら画像も消す */
+const DB=new Promise((res,rej)=>{const q=indexedDB.open('kijilab',1);q.onupgradeneeded=()=>q.result.createObjectStore('img');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});
+const dbDo=async(mode,f)=>{const d=await DB;return new Promise((res,rej)=>{const t=d.transaction('img',mode),o=t.objectStore('img'),r=f(o);t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)})};
+const dbPut=(k,v)=>dbDo('readwrite',o=>o.put(v,k));
+const dbGet=k=>dbDo('readonly',o=>o.get(k));
+const dbDel=k=>dbDo('readwrite',o=>o.delete(k));
+
+
+/* 料金の目安(使った量を端末内で数えて、単価は設定から掛ける) */
+let price=Object.assign({pi:0.15,po:0.60,pf:0.00075,px:160,pm:{'gemini-3.1-flash-lite-image':'','gemini-3.1-flash-image':0.067,'gemini-3-pro-image':''},p0:''},S('price')||{});
+if(price.pg1!==undefined){if(price.pm['gemini-3.1-flash-image']===0.067&&+price.pg1)price.pm['gemini-3.1-flash-image']=+price.pg1;delete price.pg1;delete price.pg2}
+if(price.px===150&&!S('price_px_set')){price.px=160}
+const MODELS=['gemini-3.1-flash-lite-image','gemini-3.1-flash-image','gemini-3-pro-image'];
+let use=(S('use')||[]).map(u=>u.k=='g1'?Object.assign({},u,{k:'g',m:cfg.gm}):u.k=='g2'?Object.assign({},u,{k:'g',m:cfg.gm2||cfg.gm}):u);   // {t:時刻, k:'ds'|'g1'|'g2', a:記事id, i:入力tok, o:出力tok}
+const pids=['pi','po','pf','px'];
+const pmap={pm1:MODELS[0],pm2:MODELS[1],pm3:MODELS[2]};
+function priceFill(){pids.forEach(i=>$(i).value=price[i]);Object.entries(pmap).forEach(([id,m])=>$(id).value=price.pm[m]);$('pm0').value=price.p0}
+function priceSave(){pids.forEach(i=>price[i]=$(i).value===''?'':+$(i).value);
+  Object.entries(pmap).forEach(([id,m])=>price.pm[m]=$(id).value===''?'':+$(id).value);price.p0=$('pm0').value===''?'':+$('pm0').value;
+  W('price',price);W('price_px_set',1);costShow();st('単価を保存しました')}
+priceFill();
+const gPrice=m=>{const v=(m in price.pm)?price.pm[m]:price.p0;return v===''?null:+v};
+function logUse(o){use.push(Object.assign({t:Date.now(),a:cur?cur.id:null},o));W('use',use)}
+const yen=u=>(u*(+price.px||0)).toLocaleString('ja-JP',{minimumFractionDigits:0,maximumFractionDigits:1});
+function cost1(u){
+  if(u.k=='ds')return ((u.i||0)*(+price.pi||0)+(u.o||0)*(+price.po||0))/1e6;
+  if(u.k=='g')return gPrice(u.m)||0;
+  if(u.k=='fe')return +price.pf||0;
+  return 0;
+}
+function sum(list){const r={ds:0,g:0,fe:0,d:0,tok:0,unpriced:0};
+  list.forEach(u=>{r.d+=cost1(u);if(u.k=='ds'){r.ds++;r.tok+=(u.i||0)+(u.o||0)}else if(u.k=='fe'){r.fe++}else{r.g++;if(gPrice(u.m)===null)r.unpriced++}});return r}
+function costShow(){
+  const l=$('cl');l.textContent='';
+  const ms=new Date();ms.setDate(1);ms.setHours(0,0,0,0);
+  const mon=use.filter(u=>u.t>=ms.getTime());
+  const row=(title,list)=>{const r=sum(list),d=document.createElement('div');d.className='c';
+    const b=document.createElement('b');b.textContent=title;
+    const m=document.createElement('div');
+    m.textContent=`約${yen(r.d)}円 / 文章${r.ds}回・${r.tok.toLocaleString('ja-JP')}トークン / 画像${r.g}枚 / URL取得${r.fe}回`+(r.unpriced?`(うち${r.unpriced}枚は単価未入力のため含まず)`:'');
+    d.append(b,m);l.appendChild(d)};
+  row('今月',mon);row('累計',use);
+  const by={};use.forEach(u=>{if(u.a)(by[u.a]=by[u.a]||[]).push(u)});
+  const ids=Object.keys(by).sort((a,b)=>b-a).slice(0,15);
+  if(ids.length){const h=document.createElement('b');h.textContent='記事ごと(新しい順・最大15件)';l.appendChild(h);
+    ids.forEach(id=>{const a=arts.find(x=>x.id==id);row(a&&a.title?a.title:'(無題・記事 '+id+')',by[id])})}
+}
+function costReset(k){
+  if(!confirm(k=='month'?'今月分の利用記録をリセットします。よろしいですか?':'全ての利用記録をリセットします。よろしいですか?'))return;
+  const ms=new Date();ms.setDate(1);ms.setHours(0,0,0,0);
+  use=k=='month'?use.filter(u=>u.t<ms.getTime()):[];W('use',use);costShow();
+}
+
+/* 位置の自動決定(AIに任せる/自分で決める) */
+const AD_MK='[広告]';
+function imgIns(){const e=$('ed'),a=e.selectionStart;if($('s-ed').classList.contains('on')===false&&!e.value)return st('先に記事を作ってください');
+  setEd(e.value.slice(0,a)+'\n[画像: ここに入れる画像の説明]\n'+e.value.slice(e.selectionEnd));imgList();st('画像の位置を追加しました。説明を編集して生成してください')}
+function imgAuto(){run(async()=>{
+  const e=$('ed').value;if(!e.trim())throw new Error('先に記事を作ってください');
+  const n=+$('nm').value||3;
+  const o=await ds('あなたは編集者です。','次の記事のHTMLに、画像を入れるのに適した位置へ [画像: 何を写した画像か1文] という目印をちょうど'+n+'個だけ挿入し、記事全体をHTMLのみで返してください。本文は一字も変えないでください。既に [画像: ...] がある場合はそれも数に含め、増やしすぎないでください。\n'+e);
+  setEd(unfence(o));sv('画像位置をAIで決定');imgList();
+},'画像の位置を決定中…')}
+function adAuto(){run(async()=>{
+  if(!ads.length)throw new Error('先に広告タブで広告コードを登録してください');
+  const e=$('ed').value;if(!e.trim())throw new Error('先に記事を作ってください');
+  const o=await ds('あなたは編集者です。','次の記事のHTMLに、広告を入れるのに自然な切れ目(見出しの前後など)へ [広告] という目印を2〜4個だけ挿入し、記事全体をHTMLのみで返してください。本文は一字も変えないでください。\n'+e);
+  setEd(unfence(o));sv('広告位置をAIで決定');st('[広告] の目印を入れました。送信時に広告コードへ置き換わります');
+},'広告の位置を決定中…')}
+/* 目印の [広告] を実際の広告コードへ(登録が複数なら最近使った順に1つずつ使い回す) */
+function fillAds(h){
+  if(!h.includes(AD_MK))return h;
+  const list=ads.slice().sort((a,b)=>(b.used||0)-(a.used||0));
+  if(!list.length)return h.split(AD_MK).join('');
+  let i=0;return h.split(AD_MK).map((x,k,arr)=>k<arr.length-1?x+adHtml(list[i++%list.length]):x).join('');
+}
+
+/* サムネイル(アイキャッチ)別枠 */
+let thumbs=[],thumbSel=-1;
+function thMake(){run(async()=>{
+  const e=$('ed').value;if(!e.trim())throw new Error('先に記事を作ってください');
+  const n=Math.max(1,+$('tn').value||1);
+  const o=await ds('あなたは画像ディレクターです。','次の記事のアイキャッチ(横長16:9、文字は入れない)用に、異なる構図の画像生成プロンプトを日本語で'+n+'個、1行に1個ずつ、番号や記号なしで出力してください。\nタイトル:'+$('ti').value+'\n記事:\n'+e.replace(/<[^>]+>/g,' ').slice(0,3000));
+  const ps=o.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,n);
+  thumbs=ps.map(p=>({p,im:null}));thumbSel=-1;thList();
+},'サムネイル案を作成中…')}
+function thList(){
+  const box=$('tl');box.textContent='';
+  if(!thumbs.length){box.textContent='まだ案がありません';return}
+  thumbs.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='c';
+    const ta=document.createElement('textarea');ta.style.minHeight='56px';ta.value=t.p;ta.oninput=()=>t.p=ta.value;
+    const sl=document.createElement('select');sl.style.cssText='width:auto;margin-right:6px';
+    [['標準',cfg.gm],['高品質',cfg.gm2]].forEach(([n,v])=>{if(v){const o=document.createElement('option');o.value=v;o.textContent=n;sl.appendChild(o)}});
+    const bt=document.createElement('button');bt.className='b';
+    const pk=document.createElement('button');pk.className='b';
+    const dv=document.createElement('div');
+    const draw=()=>{dv.textContent='';bt.textContent=t.im?'作り直す':'生成';pk.textContent=thumbSel==i?'✔アイキャッチに使う':'アイキャッチにする';pk.style.display=t.im?'inline-block':'none';
+      if(t.im){const im=document.createElement('img');im.src=`data:${t.im.mimeType};base64,${t.im.data}`;dv.appendChild(im)}};
+    bt.onclick=()=>run(async()=>{t.im=await gem(t.p+'\n横長16:9、画像内に文字は入れない。',sl.value);draw()},'サムネイルを生成中…');
+    pk.onclick=()=>{thumbSel=i;thList()};
+    draw();d.append(ta,sl,bt,pk,dv);box.appendChild(d);
+  });
+}
+
+/* 広告コード(中身は一切書き換えず、そのまま差し込む) */
+let ads=S('ads')||[],aid=null,aSel=[0,0];
+const isUrl=t=>/^https?:\/\/\S+$/.test(t.trim());
+const adHtml=a=>isUrl(a.code)?`<a href="${esc(a.code.trim())}" target="_blank" rel="nofollow sponsored noopener">${esc(a.name||a.code.trim())}</a>`:a.code;
+const adCat=a=>a.par?(a.par+(a.chi?' / '+a.chi:'')):'未分類';
+const adHay=a=>(a.name+' '+a.tags.join(' ')+' '+adCat(a)+' '+a.code).toLowerCase();
+function adFilter(q,cat){q=(q||'').toLowerCase().trim();return ads.filter(a=>(!cat||adCat(a).split(' / ')[0]==cat)&&(!q||adHay(a).includes(q)))}
+function adCats(){const c=[...new Set(ads.map(a=>adCat(a).split(' / ')[0]))];
+  const f=$('af'),v=f.value;f.innerHTML='<option value="">すべての分類</option>';c.forEach(x=>{const o=document.createElement('option');o.value=o.textContent=x;f.appendChild(o)});f.value=c.includes(v)?v:'';
+  const P=[...new Set(ads.map(a=>a.par).filter(Boolean))],C=[...new Set(ads.map(a=>a.chi).filter(Boolean))];
+  $('apl').innerHTML=P.map(x=>`<option value="${esc(x)}">`).join('');$('acl').innerHTML=C.map(x=>`<option value="${esc(x)}">`).join('')}
+function adl(){const l=$('al');l.textContent='';
+  const list=adFilter($('aq').value,$('af').value);
+  if(!list.length){l.textContent=ads.length?'該当なし':'まだ登録がありません';return}
+  list.forEach(a=>{const d=document.createElement('div');d.className='c';
+    const t=document.createElement('b');t.textContent=a.name||'(無名)';
+    const m=document.createElement('div');m.style.cssText='font-size:12px;color:var(--mu)';m.textContent=adCat(a)+(a.tags.length?'  #'+a.tags.join(' #'):'')+(isUrl(a.code)?'  [URL→リンク]':'');
+    const e=document.createElement('button');e.className='b';e.textContent='編集';e.onclick=()=>{aid=a.id;$('an').value=a.name;$('ap').value=a.par;$('ac').value=a.chi;$('at').value=a.tags.join(',');$('ax').value=a.code;window.scrollTo(0,0)};
+    const x=document.createElement('button');x.className='b';x.textContent='削除';x.onclick=()=>{if(confirm('削除しますか?')){ads=ads.filter(y=>y.id!=a.id);W('ads',ads);adCats();adl()}};
+    d.append(t,m,e,x);l.appendChild(d)})}
+function adSave(){const code=$('ax').value;if(!code.trim())return st('コードを入力してください');
+  const o={id:aid||Date.now(),name:$('an').value.trim(),par:$('ap').value.trim(),chi:$('ap').value.trim()?$('ac').value.trim():'',tags:$('at').value.split(',').map(x=>x.trim()).filter(Boolean),code,used:0};
+  const i=ads.findIndex(a=>a.id==aid);if(i>=0){o.used=ads[i].used||0;ads[i]=o}else ads.unshift(o);
+  W('ads',ads);adClr();adCats();adl();st('登録しました')}
+function adClr(){aid=null;['an','ap','ac','at','ax'].forEach(i=>$(i).value='')}
+function adOpen(){const e=$('ed');aSel=[e.selectionStart,e.selectionEnd];$('pq').value='';popl();$('pop').style.display='block'}
+function popl(){const l=$('pl');l.textContent='';
+  const list=adFilter($('pq').value).sort((a,b)=>(b.used||0)-(a.used||0));
+  if(!list.length){l.textContent='広告コードがありません(広告タブで登録)';return}
+  list.forEach(a=>{const b=document.createElement('button');b.className='b';b.style.cssText+=';display:block;width:100%;text-align:left';
+    b.textContent=(a.name||'(無名)')+'  ['+adCat(a)+']';
+    b.onclick=()=>{const e=$('ed'),h=adHtml(a),at=aSel[0];
+      setEd(e.value.slice(0,at)+'\n'+h+'\n'+e.value.slice(aSel[1]));
+      a.used=(a.used||0)+1;W('ads',ads);$('pop').style.display='none';st('広告を挿入しました')};
+    l.appendChild(b)})}
+rst();rs();hist();adCats();adl();thList();show(cfg.dk?'mk':'set');
+</script></body></html>
