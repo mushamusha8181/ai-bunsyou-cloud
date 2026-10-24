@@ -52,14 +52,14 @@ button{font-family:MUSHIN,system-ui;cursor:pointer}
 <label>WordPress ユーザー名(投稿専用)</label><input id="wn">
 <label>アプリケーションパスワード</label><input id="wp" type="password" autocomplete="off">
 <button class="b p" onclick="saveCfg()">保存</button>
-<p style="color:var(--mu);font-size:12px">キーはこの端末のブラウザ内だけに保存し、各社へ直接送ります。</p>
+<p style="color:var(--aux);font-size:12px">キーはこの端末のブラウザ内だけに保存し、各社へ直接送ります。</p>
 <hr style="border:0;border-top:1px solid var(--bd,#ccc);margin:14px 0">
 <b>バックアップ</b>
 <label style="display:block;margin-top:6px"><input type="checkbox" id="bkey"> APIキー・WordPressパスワードも含める(ファイルの扱いに注意)</label>
 <button class="b" onclick="bkOut()">書き出す(ドライブなどへ保存)</button>
 <button class="b" onclick="$('bkf').click()">読み込む</button>
 <input id="bkf" type="file" accept=".json,application/json" style="display:none" onchange="bkIn(this)">
-<p style="color:var(--mu);font-size:12px">履歴・画像・文体・広告・料金の記録・設定を1つのファイルにします。読み込むと、いまの内容は置き換わります。</p>
+<p style="color:var(--aux);font-size:12px">履歴・画像・文体・広告・料金の記録・設定を1つのファイルにします。読み込むと、いまの内容は置き換わります。</p>
 </section>
 
 <section id="s-mk">
@@ -137,7 +137,7 @@ button{font-family:MUSHIN,system-ui;cursor:pointer}
 <label>URL取得(Fetch) $/1回</label><input id="pf" type="number" step="any">
 <label>円換算レート(1ドル=円)</label><input id="px" type="number" step="any">
 <button class="b p" onclick="priceSave()">単価を保存</button>
-<p style="color:var(--mu);font-size:12px">金額は円で表示します(1ドル=160円が初期値)。DeepSeekは時間帯でピークの単価が2倍になるので、ピークによく使うなら単価を2倍で入れてください。表示は目安で、実際の請求は各社の管理画面が正です。</p>
+<p style="color:var(--aux);font-size:12px">金額は円で表示します(1ドル=160円が初期値)。DeepSeekは時間帯でピークの単価が2倍になるので、ピークによく使うなら単価を2倍で入れてください。表示は目安で、実際の請求は各社の管理画面が正です。</p>
 <div id="cl"></div>
 <button class="b" onclick="costReset('month')">今月分をリセット</button><button class="b" onclick="costReset('all')">全てリセット</button>
 </section>
@@ -524,7 +524,7 @@ function adl(){const l=$('al');l.textContent='';
   if(!list.length){l.textContent=ads.length?'該当なし':'まだ登録がありません';return}
   list.forEach(a=>{const d=document.createElement('div');d.className='c';
     const t=document.createElement('b');t.textContent=a.name||'(無名)';
-    const m=document.createElement('div');m.style.cssText='font-size:12px;color:var(--mu)';m.textContent=adCat(a)+(a.tags.length?'  #'+a.tags.join(' #'):'')+(isUrl(a.code)?'  [URL→リンク]':'');
+    const m=document.createElement('div');m.style.cssText='font-size:12px;color:var(--aux)';m.textContent=adCat(a)+(a.tags.length?'  #'+a.tags.join(' #'):'')+(isUrl(a.code)?'  [URL→リンク]':'');
     const e=document.createElement('button');e.className='b';e.textContent='編集';e.onclick=()=>{aid=a.id;$('an').value=a.name;$('ap').value=a.par;$('ac').value=a.chi;$('at').value=a.tags.join(',');$('ax').value=a.code;window.scrollTo(0,0)};
     const x=document.createElement('button');x.className='b';x.textContent='削除';x.onclick=()=>{if(confirm('削除しますか?')){ads=ads.filter(y=>y.id!=a.id);W('ads',ads);adCats();adl()}};
     d.append(t,m,e,x);l.appendChild(d)})}
