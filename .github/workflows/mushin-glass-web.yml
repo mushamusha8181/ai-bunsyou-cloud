@@ -1,0 +1,101 @@
+name: Apply MUSHIN Glass Web
+
+on:
+  push:
+    paths:
+      - '.github/workflows/mushin-glass-web.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MUSHIN font
+        run: |
+          curl -fsSL -A 'MUSHIN-Glass-Web' -o /tmp/mushin.zip https://modi.jpn.org/download/MODI_mushin_2021_1104.zip
+          python3 - <<'PY'
+          import zipfile
+          with zipfile.ZipFile('/tmp/mushin.zip') as z:
+              names=[n for n in z.namelist() if n == 'mushin.otf' or n.endswith('/mushin.otf')]
+              if not names: raise SystemExit('mushin.otf not found')
+              open('mushin.otf','wb').write(z.read(names[0]))
+          PY
+
+      - name: Apply shared visual identity
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          if '<link rel="icon" href="mushin-icon.svg">' not in s:
+              s=s.replace('<title>記事ラボ</title>', '<title>記事ラボ</title>\n<link rel="icon" href="mushin-icon.svg">\n<meta name="theme-color" content="#436E6A">', 1)
+
+          start=s.index('<style>')
+          end=s.index('</style>', start)+len('</style>')
+          css='''<style>
+@font-face{font-family:MUSHIN;src:url("mushin.otf") format("opentype");font-display:swap}
+:root{--primary:#7FA98C;--text:#000000;--bg:#E9F0EB;--band:#D5E2D8;--list:#F2F6F3;--row:#F4F7F5;--middle:#B4C9B9;--aux:#758078;--glass:.72;--glass-soft:.58;--bd:rgba(76,105,85,.22);--shadow:0 8px 30px rgba(41,62,48,.07)}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;font:14px/1.58 MUSHIN,system-ui,-apple-system,sans-serif;background:linear-gradient(155deg,var(--bg),#fbfcfa 72%);color:var(--text);min-height:100vh}
+nav{display:flex;position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--band) calc(var(--glass)*100%),transparent);border-bottom:1px solid var(--bd);backdrop-filter:blur(22px) saturate(120%);-webkit-backdrop-filter:blur(22px) saturate(120%);padding:4px 6px}
+nav button{flex:1;border:0;background:transparent;padding:10px 2px;font:13px/1.2 MUSHIN,system-ui;color:var(--aux);border-radius:10px;box-shadow:none}
+nav button.on{color:#24372A;background:color-mix(in srgb,var(--primary) 17%,transparent)}
+main{max-width:920px;margin:auto;padding:14px 14px 54px}
+section{display:none}section.on{display:block}
+label{display:block;margin:12px 0 4px;font-size:12px;color:var(--aux)}
+input,textarea,select{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:12px;background:color-mix(in srgb,#fff calc(var(--glass-soft)*100%),transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--text);font:inherit;outline:none;box-shadow:none}
+input:focus,textarea:focus,select:focus{border-color:color-mix(in srgb,var(--primary) 65%,#fff);background:color-mix(in srgb,#fff calc((var(--glass-soft) + .08)*100%),transparent)}
+textarea{min-height:90px}
+button{font-family:MUSHIN,system-ui;cursor:pointer}
+.b{padding:8px 12px;font-size:12px;border:1px solid var(--bd);background:color-mix(in srgb,#fff calc(var(--glass-soft)*100%),transparent);color:var(--text);border-radius:11px;margin:7px 6px 0 0;box-shadow:none;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.b:hover{background:color-mix(in srgb,var(--primary) 14%,#fff)}
+.p{border-color:color-mix(in srgb,var(--primary) 42%,transparent);background:color-mix(in srgb,var(--primary) 20%,#fff);color:#18251C}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.c,#mushinAppearance{border:1px solid var(--bd);border-radius:14px;padding:12px;margin:10px 0;background:color-mix(in srgb,#fff calc(var(--glass)*100%),transparent);backdrop-filter:blur(18px) saturate(112%);-webkit-backdrop-filter:blur(18px) saturate(112%);box-shadow:var(--shadow)}
+#pv{border:1px solid var(--bd);border-radius:14px;padding:12px;min-height:140px;display:none;background:color-mix(in srgb,#fff calc(var(--glass)*100%),transparent)}
+#pv img,.c img{max-width:100%;border-radius:12px}
+#st{position:fixed;left:0;right:0;bottom:0;padding:8px 14px;background:color-mix(in srgb,var(--band) calc(var(--glass)*100%),transparent);border-top:1px solid var(--bd);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-size:12px;color:var(--aux);min-height:34px;z-index:25}
+#pop{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+#pop>div{background:color-mix(in srgb,var(--bg) 88%,transparent)!important;border-color:var(--bd)!important;border-radius:16px!important;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow)}
+.mg-head{font-size:18px;color:#172219;margin-bottom:2px}.mg-note{font-size:12px;color:var(--aux);margin:2px 0 8px}.mg-value{font-size:12px;color:var(--aux);margin-top:4px}.mg-range{accent-color:var(--primary);padding:0;background:transparent;border:0}
+@media(max-width:560px){main{padding-left:10px;padding-right:10px}.row{gap:6px}.b{padding:8px 10px}nav button{font-size:12px}}
+</style>'''
+          s=s[:start]+css+s[end:]
+
+          marker='<section id="s-set">'
+          if 'id="mushinAppearance"' not in s:
+              panel='''<section id="s-set">\n<div id="mushinAppearance">\n<div class="mg-head">外観と表示</div><div class="mg-note">MUSHIN Glass 共通デザイン</div>\n<label>キーカラー</label><select id="mgPalette" onchange="mgSave()"></select>\n<label>文字色</label><select id="mgText" onchange="mgSave()"></select>\n<label>半透明具合</label><input class="mg-range" id="mgGlass" type="range" min="35" max="95" value="72" oninput="mgGlassValue.textContent=this.value+'%'" onchange="mgSave()"><div class="mg-value" id="mgGlassValue">72%</div>\n</div>'''
+              s=s.replace(marker,panel,1)
+
+          script_marker='<script>\n'
+          js='''<script>\nconst MG_PALETTES={mono_light:['ブラック','#1A1A1A','#1A1A1A'],white:['ホワイト','#FFFFFF','#333333'],mono_dark:['グレー','#8C8C8C','#262626'],green:['グリーン','#5E8C6E','#2F5A44'],green_light:['薄い緑','#7FA98C','#2F5A44'],red_rose:['ピンク','#B2798C','#3A2A31'],olive_gray:['モスグレー','#5E6455','#2B2E27'],teal_gray:['モスグリーン','#556B3E','#2E3524'],moss_pink:['モスピンク','#8E5A6B','#3A2A31'],moss_red:['モスレッド','#8E4F4A','#3A2B29'],moss_black:['モスブラック','#3A3A3A','#262626'],red_night:['セージ','#8DA08B','#2B3129'],graphite:['チャコール','#4F555C','#262626'],slate:['スレート','#5A6672','#262626'],blue_sky:['ブルーグレー','#6B7C93','#2A323D'],blue_night:['ネイビー','#4B5566','#262C36'],mauve_gray:['モーヴ','#7E7286','#2E2A33'],sand_gray:['サンド','#A99A82','#38322A'],brown_latte:['テラコッタ','#A8796A','#3A2E28'],brown_cocoa:['ブラウン','#7A6558','#332A25']};\nconst MG_TEXT={black:['黒','#000000'],white:['白','#FFFFFF'],gray_light:['薄いグレー','#9E9E9E'],gray_dark:['濃いグレー','#424242'],red_dark:['濃い赤','#8E2F2F'],red_light:['薄い赤','#C97B7B'],pink_dark:['濃いピンク','#A3435F'],pink_light:['薄いピンク','#D89AAC'],green_dark:['濃い緑','#2F6B45'],green_light:['薄い緑','#7FA98C'],moss_gray_dark:['濃いモスグレー','#5E6455'],moss_gray_light:['薄いモスグレー','#9AA08F'],moss_green_dark:['濃いモスグリーン','#556B3E'],moss_green_light:['薄いモスグリーン','#8FA277'],brown_dark:['濃い茶色','#6F4A2A'],brown_light:['薄い茶色','#B08A63'],blue_dark:['濃い青','#2F4F8E'],blue_light:['薄い青','#7B90C4'],sky_dark:['濃い空色','#2F6E8E'],sky_light:['薄い空色','#7FAFC4']};\nconst mgHex=h=>{h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};\nconst mgMix=(a,b,t)=>{a=mgHex(a);b=mgHex(b);return '#'+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,'0')).join('')};\nfunction mgLoad(){try{return Object.assign({palette:'green_light',text_color:'black',glass_opacity:72},JSON.parse(localStorage.getItem('mushin_glass')||'{}'))}catch(e){return {palette:'green_light',text_color:'black',glass_opacity:72}}}\nfunction mgApply(){const c=mgLoad(),p=MG_PALETTES[c.palette]||MG_PALETTES.green_light,t=MG_TEXT[c.text_color]||MG_TEXT.black,r=document.documentElement.style,primary=p[1],fg=t[1],bg=mgMix(primary,'#FFFFFF',.82),band=mgMix(primary,bg,.70);r.setProperty('--primary',primary);r.setProperty('--text',fg);r.setProperty('--bg',bg);r.setProperty('--band',band);r.setProperty('--list',mgMix(primary,'#FFFFFF',.90));r.setProperty('--row',mgMix(primary,'#FFFFFF',.92));r.setProperty('--middle',mgMix(primary,bg,.45));r.setProperty('--aux',mgMix(p[2],bg,.45));r.setProperty('--glass',Math.max(35,Math.min(95,c.glass_opacity))/100);r.setProperty('--glass-soft',Math.max(35,Math.min(95,c.glass_opacity-14))/100);const theme=document.querySelector('meta[name=theme-color]');if(theme)theme.content='#436E6A';}\nfunction mgInit(){const p=document.getElementById('mgPalette'),t=document.getElementById('mgText'),g=document.getElementById('mgGlass');if(!p||!t||!g)return;Object.entries(MG_PALETTES).forEach(([id,v])=>p.add(new Option(v[0],id)));Object.entries(MG_TEXT).forEach(([id,v])=>t.add(new Option(v[0],id)));const c=mgLoad();p.value=c.palette;t.value=c.text_color;g.value=c.glass_opacity;document.getElementById('mgGlassValue').textContent=c.glass_opacity+'%';}\nfunction mgSave(){const c=mgLoad(),p=document.getElementById('mgPalette'),t=document.getElementById('mgText'),g=document.getElementById('mgGlass');if(p)c.palette=p.value;if(t)c.text_color=t.value;if(g)c.glass_opacity=+g.value;localStorage.setItem('mushin_glass',JSON.stringify(c));mgApply();}\nmgApply();\n'''
+          if 'const MG_PALETTES=' not in s:
+              s=s.replace(script_marker,js,1)
+
+          if 'mgInit();' not in s[s.rfind('<script>'):]:
+              s=s.replace('</script>\n</body>', 'mgInit();\n</script>\n</body>') if '</script>\n</body>' in s else s
+          # Ensure init executes after DOM construction even if closing formatting differs.
+          if 'DOMContentLoaded' not in s:
+              pos=s.rfind('</script>')
+              s=s[:pos]+"\ndocument.addEventListener('DOMContentLoaded',()=>{mgInit();mgApply();});\n"+s[pos:]
+
+          p.write_text(s,encoding='utf-8')
+          Path('mushin-icon.svg').write_text('''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108"><rect width="108" height="108" rx="22" fill="#fff"/><path fill="#436E6A" d="M18 78V31c0-8 5-13 13-13 5 0 9 3 12 8l11 17 11-17c3-5 7-8 12-8 8 0 13 5 13 13v47H77V40L59 68c-2 4-8 4-10 0L31 40v38z"/></svg>''',encoding='utf-8')
+          PY
+
+      - name: Commit verified web design
+        run: |
+          rm .github/workflows/mushin-glass-web.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html mushin.otf mushin-icon.svg .github/workflows/mushin-glass-web.yml
+          git commit -m "Apply MUSHIN Glass design system"
+          git push
