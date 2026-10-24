@@ -2,30 +2,46 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>記事ラボ</title>
+<link rel="icon" href="mushin-icon.svg">
+<meta name="theme-color" content="#436E6A">
 <style>
-:root{--bg:#f7f6f2;--fg:#1d1d1b;--mu:#76756f;--ac:#1f7a5a;--bd:#d9d7cf}
-@media(prefers-color-scheme:dark){:root{--bg:#1a1b1a;--fg:#ececea;--mu:#97968f;--ac:#4cc49a;--bd:#3d3f3c}}
+@font-face{font-family:MUSHIN;src:url("mushin.otf") format("opentype");font-display:swap}
+:root{--primary:#7FA98C;--text:#000;--bg:#E9F0EB;--band:#D5E2D8;--list:#F2F6F3;--row:#F4F7F5;--middle:#B4C9B9;--aux:#758078;--glass:.72;--glass-soft:.58;--bd:rgba(76,105,85,.22);--shadow:0 8px 30px rgba(41,62,48,.07)}
 *{box-sizing:border-box}
-body{margin:0;font:14px/1.55 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
-nav{display:flex;position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--bd);z-index:2}
-nav button{flex:1;border:0;background:none;padding:9px 2px;font-size:13px;color:var(--mu)}
-nav button.on{color:var(--ac);box-shadow:inset 0 -2px var(--ac)}
-main{padding:10px 12px 40px}
+html{background:var(--bg)}
+body{margin:0;font:14px/1.58 MUSHIN,system-ui,-apple-system,sans-serif;background:linear-gradient(155deg,var(--bg),#fbfcfa 72%);color:var(--text);min-height:100vh}
+nav{display:flex;position:sticky;top:0;z-index:20;background:rgba(213,226,216,var(--glass));border-bottom:1px solid var(--bd);backdrop-filter:blur(22px) saturate(120%);-webkit-backdrop-filter:blur(22px) saturate(120%);padding:4px 6px}
+nav button{flex:1;border:0;background:transparent;padding:10px 2px;font:13px/1.2 MUSHIN,system-ui;color:var(--aux);border-radius:10px;box-shadow:none}
+nav button.on{color:#24372A;background:rgba(127,169,140,.17)}
+main{max-width:920px;margin:auto;padding:14px 14px 54px}
 section{display:none}section.on{display:block}
-label{display:block;margin:10px 0 3px;font-size:12px;color:var(--mu)}
-input,textarea,select{width:100%;padding:7px;border:1px solid var(--bd);border-radius:6px;background:none;color:inherit;font:inherit}
+label{display:block;margin:12px 0 4px;font-size:12px;color:var(--aux)}
+input,textarea,select{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:12px;background:rgba(255,255,255,var(--glass-soft));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--text);font:inherit;outline:none;box-shadow:none}
+input:focus,textarea:focus,select:focus{border-color:var(--middle);background:rgba(255,255,255,.72)}
 textarea{min-height:90px}
-.b{padding:5px 10px;font-size:12px;border:1px solid var(--ac);background:none;color:var(--ac);border-radius:6px;margin:6px 6px 0 0}
-.p{background:var(--ac);color:var(--bg)}
-.row{display:flex;gap:8px}.row>*{flex:1}
-.c{border:1px solid var(--bd);border-radius:8px;padding:8px;margin:8px 0}
-#pv{border:1px solid var(--bd);border-radius:6px;padding:8px;min-height:140px;display:none}
-#pv img,.c img{max-width:100%;border-radius:6px}
-#st{position:fixed;left:0;right:0;bottom:0;padding:6px 12px;background:var(--bg);border-top:1px solid var(--bd);font-size:12px;color:var(--mu);min-height:30px}
+button{font-family:MUSHIN,system-ui;cursor:pointer}
+.b{padding:8px 12px;font-size:12px;border:1px solid var(--bd);background:rgba(255,255,255,var(--glass-soft));color:var(--text);border-radius:11px;margin:7px 6px 0 0;box-shadow:none;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.b:hover{background:var(--row)}
+.p{border-color:var(--middle);background:var(--band);color:#18251C}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.c,#mushinAppearance{border:1px solid var(--bd);border-radius:14px;padding:12px;margin:10px 0;background:rgba(255,255,255,var(--glass));backdrop-filter:blur(18px) saturate(112%);-webkit-backdrop-filter:blur(18px) saturate(112%);box-shadow:var(--shadow)}
+#pv{border:1px solid var(--bd);border-radius:14px;padding:12px;min-height:140px;display:none;background:rgba(255,255,255,var(--glass))}
+#pv img,.c img{max-width:100%;border-radius:12px}
+#st{position:fixed;left:0;right:0;bottom:0;padding:8px 14px;background:rgba(213,226,216,var(--glass));border-top:1px solid var(--bd);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-size:12px;color:var(--aux);min-height:34px;z-index:25}
+#pop{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+#pop>div{background:rgba(233,240,235,.9)!important;border-color:var(--bd)!important;border-radius:16px!important;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow)}
+.mg-head{font-size:18px;color:#172219;margin-bottom:2px}.mg-note{font-size:12px;color:var(--aux);margin:2px 0 8px}.mg-value{font-size:12px;color:var(--aux);margin-top:4px}.mg-range{accent-color:var(--primary);padding:0;background:transparent;border:0}
+@media(max-width:560px){main{padding-left:10px;padding-right:10px}.row{gap:6px}.b{padding:8px 10px}nav button{font-size:12px}}
 </style></head><body>
 <nav id="nv"></nav>
 <main>
 <section id="s-set">
+<div id="mushinAppearance">
+<div class="mg-head">外観と表示</div><div class="mg-note">MUSHIN Glass 共通デザイン</div>
+<label>キーカラー</label><select id="mgPalette" onchange="mgSave()"></select>
+<label>文字色</label><select id="mgText" onchange="mgSave()"></select>
+<label>半透明具合</label><input class="mg-range" id="mgGlass" type="range" min="35" max="95" value="72" oninput="mgGlassValue.textContent=this.value+'%'" onchange="mgSave()"><div class="mg-value" id="mgGlassValue">72%</div>
+</div>
 <label>DeepSeek APIキー</label><input id="dk" type="password" autocomplete="off">
 <label>DeepSeek モデル名</label><input id="dm">
 <label>Gemini APIキー</label><input id="gk" type="password" autocomplete="off">
@@ -135,6 +151,15 @@ textarea{min-height:90px}
 <div id="st"></div>
 
 <script>
+const MG_PALETTES={mono_light:['ブラック','#1A1A1A','#1A1A1A'],white:['ホワイト','#FFFFFF','#333333'],mono_dark:['グレー','#8C8C8C','#262626'],green:['グリーン','#5E8C6E','#2F5A44'],green_light:['薄い緑','#7FA98C','#2F5A44'],red_rose:['ピンク','#B2798C','#3A2A31'],olive_gray:['モスグレー','#5E6455','#2B2E27'],teal_gray:['モスグリーン','#556B3E','#2E3524'],moss_pink:['モスピンク','#8E5A6B','#3A2A31'],moss_red:['モスレッド','#8E4F4A','#3A2B29'],moss_black:['モスブラック','#3A3A3A','#262626'],red_night:['セージ','#8DA08B','#2B3129'],graphite:['チャコール','#4F555C','#262626'],slate:['スレート','#5A6672','#262626'],blue_sky:['ブルーグレー','#6B7C93','#2A323D'],blue_night:['ネイビー','#4B5566','#262C36'],mauve_gray:['モーヴ','#7E7286','#2E2A33'],sand_gray:['サンド','#A99A82','#38322A'],brown_latte:['テラコッタ','#A8796A','#3A2E28'],brown_cocoa:['ブラウン','#7A6558','#332A25']};
+const MG_TEXT={black:['黒','#000000'],white:['白','#FFFFFF'],gray_light:['薄いグレー','#9E9E9E'],gray_dark:['濃いグレー','#424242'],red_dark:['濃い赤','#8E2F2F'],red_light:['薄い赤','#C97B7B'],pink_dark:['濃いピンク','#A3435F'],pink_light:['薄いピンク','#D89AAC'],green_dark:['濃い緑','#2F6B45'],green_light:['薄い緑','#7FA98C'],moss_gray_dark:['濃いモスグレー','#5E6455'],moss_gray_light:['薄いモスグレー','#9AA08F'],moss_green_dark:['濃いモスグリーン','#556B3E'],moss_green_light:['薄いモスグリーン','#8FA277'],brown_dark:['濃い茶色','#6F4A2A'],brown_light:['薄い茶色','#B08A63'],blue_dark:['濃い青','#2F4F8E'],blue_light:['薄い青','#7B90C4'],sky_dark:['濃い空色','#2F6E8E'],sky_light:['薄い空色','#7FAFC4']};
+const mgHex=h=>{h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
+const mgMix=(a,b,t)=>{a=mgHex(a);b=mgHex(b);return '#'+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,'0')).join('')};
+function mgLoad(){try{return Object.assign({palette:'green_light',text_color:'black',glass_opacity:72},JSON.parse(localStorage.getItem('mushin_glass')||'{}'))}catch(e){return {palette:'green_light',text_color:'black',glass_opacity:72}}}
+function mgApply(){const c=mgLoad(),p=MG_PALETTES[c.palette]||MG_PALETTES.green_light,t=MG_TEXT[c.text_color]||MG_TEXT.black,r=document.documentElement.style,primary=p[1],fg=t[1],bg=mgMix(primary,'#FFFFFF',.82),band=mgMix(primary,bg,.70);r.setProperty('--primary',primary);r.setProperty('--text',fg);r.setProperty('--bg',bg);r.setProperty('--band',band);r.setProperty('--list',mgMix(primary,'#FFFFFF',.90));r.setProperty('--row',mgMix(primary,'#FFFFFF',.92));r.setProperty('--middle',mgMix(primary,bg,.45));r.setProperty('--aux',mgMix(p[2],bg,.45));r.setProperty('--glass',Math.max(35,Math.min(95,c.glass_opacity))/100);r.setProperty('--glass-soft',Math.max(35,Math.min(95,c.glass_opacity-14))/100);const theme=document.querySelector('meta[name=theme-color]');if(theme)theme.content='#436E6A';}
+function mgInit(){const p=document.getElementById('mgPalette'),t=document.getElementById('mgText'),g=document.getElementById('mgGlass');if(!p||!t||!g)return;if(!p.options.length)Object.entries(MG_PALETTES).forEach(([id,v])=>p.add(new Option(v[0],id)));if(!t.options.length)Object.entries(MG_TEXT).forEach(([id,v])=>t.add(new Option(v[0],id)));const c=mgLoad();p.value=c.palette;t.value=c.text_color;g.value=c.glass_opacity;document.getElementById('mgGlassValue').textContent=c.glass_opacity+'%';}
+function mgSave(){const c=mgLoad(),p=document.getElementById('mgPalette'),t=document.getElementById('mgText'),g=document.getElementById('mgGlass');if(p)c.palette=p.value;if(t)c.text_color=t.value;if(g)c.glass_opacity=+g.value;localStorage.setItem('mushin_glass',JSON.stringify(c));mgApply();}
+mgApply();
 const $=id=>document.getElementById(id);
 const S=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
 const W=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){st('保存できませんでした')}};
@@ -519,4 +544,6 @@ function popl(){const l=$('pl');l.textContent='';
       a.used=(a.used||0)+1;W('ads',ads);$('pop').style.display='none';st('広告を挿入しました')};
     l.appendChild(b)})}
 rst();rs();hist();adCats();adl();thList();show(cfg.dk?'mk':'set');
+
+document.addEventListener('DOMContentLoaded',()=>{mgInit();mgApply();});
 </script></body></html>
