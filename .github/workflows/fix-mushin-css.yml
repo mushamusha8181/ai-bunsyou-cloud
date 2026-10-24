@@ -1,0 +1,36 @@
+name: Fix MUSHIN Glass muted text
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-mushin-css.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix undefined muted color variable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = s.count('var(--mu)')
+          if old == 0:
+              raise SystemExit('No var(--mu) occurrences found')
+          s = s.replace('var(--mu)', 'var(--aux)')
+          p.write_text(s, encoding='utf-8')
+          print(f'replaced {old} occurrence(s)')
+          PY
+          rm .github/workflows/fix-mushin-css.yml
+      - name: Commit fix
+        run: |
+          git config user.name 'mushamusha8181'
+          git config user.email 'mushamusha8181@users.noreply.github.com'
+          git add index.html .github/workflows/fix-mushin-css.yml
+          git commit -m 'Fix MUSHIN Glass muted text color'
+          git push
