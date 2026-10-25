@@ -1,5 +1,7 @@
-2026-10-24.2
+2026-10-25.2
 Default palette: green_light #7FA98C
 Default text: black #000000
-Default icon: teal_gray #436E6A
+Default icon/theme: teal_gray #436E6A
 Default glass opacity: 72
+Dynamic web UI: CSS variables + LocalStorage immediate apply
+Semantic content: site/editor content colors preserved
